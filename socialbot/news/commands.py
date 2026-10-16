@@ -1,4 +1,5 @@
-"""News-lane commands that need a story from the store: fetch its articles, draft its slide."""
+"""News-lane commands that need a story from the store: fetch its articles, draft its slide,
+draft the whole roundup."""
 
 from datetime import datetime, timezone
 
@@ -8,6 +9,7 @@ from ..core.llm import LLM, LLMError
 from .draft.slide_copy import SlideDraft, draft_slide
 from .extract import Article, fetch_article
 from .models import Story
+from .pipeline import window
 from .resolve import resolve_story
 
 ARTICLES_PER_STORY = 2
@@ -91,7 +93,6 @@ def cmd_news_draft(cfg: dict, args) -> int:
 
 def cmd_news_roundup(cfg: dict, args) -> int:
     """Draft slides for the top draftable stories in the store, so the human sees finished slides."""
-    from .pipeline import window
     db = DB(cfg["paths"]["data_dir"] / "socialbot.sqlite")
     http = http_mod.client(float(cfg["news"].get("http_timeout_seconds", 20)))
     try:
@@ -109,8 +110,7 @@ def cmd_news_roundup(cfg: dict, args) -> int:
         results = []
         for i, story in enumerate(picked, 1):
             existing = None if args.redraft else db.latest_draft(story.id, "slide")
-            print(f"
-[{i}/{len(picked)}] {story.triage['headline']}  ({story.triage['newsworthy']}) [{story.id}]")
+            print(f"\n[{i}/{len(picked)}] {story.triage['headline']}  ({story.triage['newsworthy']}) [{story.id}]")
             if existing:
                 print("  using existing draft (pass --redraft to redo)")
                 results.append((story, SlideDraft(**existing), []))
@@ -127,10 +127,8 @@ def cmd_news_roundup(cfg: dict, args) -> int:
             db.save_draft(story.id, "slide", d.to_dict())
             print_draft(d, articles)
             results.append((story, d, articles))
-        print(f"
-{llm.summary()}")
-        print("
-Roundup so far:")
+        print(f"\n{llm.summary()}")
+        print("\nRoundup so far:")
         for story, d, _ in results:
             flag = f"  ⚠ {len(d.warnings)} warning(s)" if d.warnings else ""
             print(f"  - {d.headline}  (confidence {d.confidence}){flag}")
