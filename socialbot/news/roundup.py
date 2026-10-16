@@ -67,6 +67,9 @@ def assemble(cfg: dict, db: DB, n: int | None = None, now: datetime | None = Non
 
 def render(cfg: dict, roundup: Roundup, out_dir: Path) -> Roundup:
     rc = cfg.get("roundup") or {}
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for old in out_dir.glob("*.png"):          # a shorter roundup must not leave last run's slides behind
+        old.unlink()
     total = len(roundup.slides) + 2
     pages = [(cover_slide_html(rc.get("cover_title", "What Happened in AI This Week"),
                                rc.get("cover_kicker", "& what you can do about it")), out_dir / "slide-01-cover.png")]
