@@ -11,8 +11,7 @@ Two lanes, one rule: nothing is published without a logged human approval.
 Shared plumbing lives in `socialbot/core/` (Claude wrapper, SQLite, voice, Zulip, Buffer, CLI). Lanes share
 nothing else: not sources, not ranking, not prompts.
 
-Plan and rationale: `C:\Users\zacha\.claude\plans\pasted-content-id-dfb5-this-is-streamed-raccoon.md`.
-Conventions for Claude Code sessions: `CLAUDE.md`.
+**Where we are and what's next: `ROADMAP.md`.** Conventions for Claude Code sessions: `CLAUDE.md`.
 
 ## Setup
 

@@ -1,6 +1,10 @@
 # HIC SocialBot: notes for Claude Code sessions
 
-Plan and rationale: `C:\Users\zacha\.claude\plans\pasted-content-id-dfb5-this-is-streamed-raccoon.md`.
+**Start here: `ROADMAP.md`.** It has the current step, what's blocked, and what's next. At the end of every
+session, update its **Now** box, tick checkboxes, add a **Session log** line, and record settled decisions.
+
+Original plan and rationale: `C:\Users\zacha\.claude\plans\pasted-content-id-dfb5-this-is-streamed-raccoon.md`
+(local to Zach's machine; ROADMAP.md carries everything a session needs).
 
 ## What this is
 
