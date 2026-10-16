@@ -5,6 +5,7 @@ content; it is evidence for the verifier and raw material for the writer.
 Two fetch paths: a plain HTTP GET with browser headers, and, when that is blocked or returns a
 stub, a headless browser (Playwright) that renders the page like a reader would."""
 
+import html as html_mod
 import re
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -47,9 +48,9 @@ class Article:
 def meta_tags(html: str) -> dict[str, str]:
     tags: dict[str, str] = {}
     for m in _META.finditer(html):
-        tags.setdefault(m.group(1).lower(), m.group(2))
+        tags.setdefault(m.group(1).lower(), html_mod.unescape(m.group(2)))
     for m in _META_REV.finditer(html):
-        tags.setdefault(m.group(2).lower(), m.group(1))
+        tags.setdefault(m.group(2).lower(), html_mod.unescape(m.group(1)))
     return tags
 
 

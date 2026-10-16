@@ -4,7 +4,7 @@ from socialbot.news.extract import meta_tags, parse_article
 
 HTML = """<!doctype html><html><head><title>Eight states sue OpenAI | Example News</title>
 <meta property="og:title" content="Eight states sue OpenAI over ChatGPT harms">
-<meta property="og:image" content="https://cdn.example.com/img/openai-suit.jpg">
+<meta property="og:image" content="https://cdn.example.com/img/openai-suit.jpg?w=1920&amp;h=1080">
 <meta property="og:image:alt" content="The OpenAI logo on a phone screen. Photo: Example/Jane Doe">
 <meta property="article:published_time" content="2026-10-14T18:02:00Z">
 <meta name="author" content="Jane Doe">
@@ -25,7 +25,7 @@ class ExtractTests(unittest.TestCase):
         self.assertTrue(art.ok, art.error)
         self.assertIn("Eight US states sued OpenAI", art.text)
         self.assertNotIn("Home · Tech", art.text)
-        self.assertEqual(art.image_url, "https://cdn.example.com/img/openai-suit.jpg")
+        self.assertEqual(art.image_url, "https://cdn.example.com/img/openai-suit.jpg?w=1920&h=1080")
         self.assertIn("Jane Doe", art.image_credit)
         self.assertEqual(art.author, "Jane Doe")
         self.assertTrue(art.published_at.startswith("2026-10-14"))
