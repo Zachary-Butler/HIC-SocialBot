@@ -1,0 +1,88 @@
+# Settings. Secrets live in .env (see .env.example).
+
+paths:
+  data_dir: data                  # SQLite DB, LLM cache, run logs, rendered slides
+
+llm:
+  triage_model: claude-sonnet-5-5   # bulk classification of many stories
+  draft_model: claude-opus-5-5      # slide copy and captions: quality matters, volume is small
+  effort: medium
+  max_cost_per_run_usd: 3.00
+  prices_usd_per_mtok:              # input / output / cache write (1.25x input) / cache read
+    claude-opus-5-5:   {input: 4.00, output: 20.00, cache_write: 5.00,  cache_read: 0.20}
+    claude-sonnet-5-5: {input: 2.00, output: 10.00, cache_write: 2.50,  cache_read: 0.20}
+    claude-haiku-5-5:  {input: 0.10, output: 0.50,  cache_write: 0.125, cache_read: 0.01}
+
+news:
+  outlets_file: outlets.yaml
+  window_days: 7                  # how far back a weekly roundup looks
+  max_stories: 9                  # story slides to pre-build (roundup uses 3-6, the rest are alternates)
+  http_timeout_seconds: 20
+
+  # Search feeds reach outlets without RSS (Reuters, AP, Bloomberg, Axios, local TV) and surface
+  # state stories. Each query runs against Google News RSS and Bing News RSS.
+  search:
+    google: true
+    bing: true
+    queries:
+      - '"artificial intelligence" (regulation OR legislation OR bill OR law)'
+      - 'AI chatbot (teen OR teens OR children OR kids OR minors)'
+      - '"data center" (moratorium OR zoning OR electricity OR water OR residents)'
+      - 'AI (layoffs OR jobs OR hiring OR workers)'
+      - '(deepfake OR "voice clone" OR "AI-generated") scam'
+      - '"AI safety" (resign OR resigns OR whistleblower OR warning)'
+      - '"attorney general" (AI OR chatbot OR OpenAI OR "Character.AI")'
+      - 'AI agents (hack OR hacked OR breach OR "broke out" OR autonomous)'
+      - '(OpenAI OR Anthropic OR "Google DeepMind" OR xAI) (safety OR risk OR lawsuit OR regulators)'
+      - 'AI (poll OR survey) voters'
+      - 'site:reuters.com AI'
+      - 'site:apnews.com artificial intelligence'
+      - 'site:bloomberg.com AI regulation'
+      - 'site:axios.com AI'
+
+  # A story must be about AI to be ranked at all. Short terms match as whole words ("ai" never
+  # matches "said"); longer terms match as phrases. Claude triage makes the final call.
+  relevance_terms: [ai, a.i., "artificial intelligence", chatbot, chatbots, chatgpt, openai, anthropic, claude,
+                    gemini, deepmind, xai, grok, llm, llms, "large language model", "machine learning", deepfake,
+                    deepfakes, "data center", "data centers", "data centre", algorithm, algorithms, automation,
+                    "character.ai", copilot, nvidia, superintelligence, agi, "frontier model", "foundation model",
+                    "voice clone", "generative"]
+
+  # Hard-constraint phrases: if any post or article contains one, the matching risk flag is added even
+  # when triage misses it (ported from the prototype's keyword safety net).
+  risk_keywords:
+    deceased_minor: ["school shooting", "teen suicide", "died by suicide", "took his own life", "took her own life",
+                     "wrongful death", "killed himself", "killed herself", "son died", "daughter died", "14-year-old died",
+                     "16-year-old died", "teen died", "boy died", "girl died"]
+
+  # HIC's on-ramps: the framings a story can connect to. Keywords are a cheap first pass;
+  # Claude triage makes the real call. Descriptions double as prompt text.
+  on_ramps:
+    child_safety:
+      description: "AI chatbots and companions reaching kids and teens; harms, lawsuits, state action, rules before launch."
+      keywords: [teen, teens, child, children, kids, minors, "character.ai", companion, companions, therapist, "age verification"]
+    jobs:
+      description: "AI and work: layoffs, hiring freezes, entry-level jobs, who benefits, what workers are owed."
+      keywords: [layoffs, jobs, hiring, workers, unemployment, "entry-level", wages, automation]
+    data_centers:
+      description: "Data centers in communities: power bills, water, noise, land, local moratoriums, who decides."
+      keywords: ["data center", "data centers", "data centre", moratorium, zoning, "power bills", electricity, megawatt, "water use", grid]
+    deepfakes_scams:
+      description: "Deepfakes, voice clones, AI-enabled fraud and nonconsensual imagery; who is accountable."
+      keywords: [deepfake, deepfakes, "voice clone", scam, scams, fraud, nonconsensual, impersonat]
+    loss_of_control:
+      description: "Frontier AI risk: agents acting on their own, safety researchers warning or resigning, labs' own admissions, oversight that is voluntary instead of required."
+      keywords: ["loss of control", "AI safety", resign, resigned, resigns, whistleblower, "AI agents", "rogue", autonomous, bioweapon, catastrophic, oversight, "kill switch", superintelligence, "self-replicat", "broke out", "broke into"]
+    power_concentration:
+      description: "A few companies and executives deciding for everyone: lobbying, political spending, regulatory capture, self-policing."
+      keywords: [lobbying, "super PAC", lobbyists, "political spending", monopoly, antitrust, "self-regulat", preemption]
+    international:
+      description: "International agreements, verification, incident reporting, US-China coordination on AI."
+      keywords: [treaty, "international body", "international agreement", "incident reporting", summit, "US-China", "U.S.-China", containment, "arms control"]
+
+  rank:
+    weights: {tier: 0.35, corroboration: 0.30, recency: 0.15, on_ramp: 0.20}
+    corroboration_saturates_at: 5   # distinct outlets at which the corroboration term maxes out
+    recency_half_life_days: 3
+    title_similarity: 82            # rapidfuzz token_set_ratio threshold for "same story"
+    cluster_max_days_apart: 4

@@ -1,0 +1,142 @@
+# Reputable outlets for the NEWS lane only. The social scanner never reads this file.
+#
+# tier      weight  meaning
+#  1         1.0    wire services and national news
+#  official  0.9    government, courts, regulators, attorneys general (primary sources)
+#  2         0.8    major tech and business press
+#  3         0.6    specialist AI / tech-policy outlets and newsletters
+#  4         0.5    local broadcast and regional press (state stories; usually found via search feeds)
+#  company   0.5    AI company announcements (primary, but self-interested)
+#  unlisted  0.3    anything not listed below: shown, weighted low
+#  syndicated 0.2   aggregators that republish others (MSN, Yahoo); excluded from corroboration
+#
+# `feeds` are RSS/Atom URLs we poll directly. Outlets without feeds are reached through the
+# search feeds (Google News / Bing News queries in config.yaml). Run `socialbot news feeds check`
+# to see which feed URLs are alive.
+
+tiers:
+  "1": {weight: 1.0, label: "Wire / national"}
+  official: {weight: 0.9, label: "Official / government"}
+  "2": {weight: 0.8, label: "Major tech & business"}
+  "3": {weight: 0.6, label: "Specialist AI & policy"}
+  "4": {weight: 0.5, label: "Local & regional"}
+  company: {weight: 0.5, label: "AI company"}
+  unlisted: {weight: 0.3, label: "Unlisted"}
+  syndicated: {weight: 0.2, label: "Syndicated copy"}   # never counts as an independent outlet
+
+outlets:
+  # ---- tier 1: wire / national ----
+  - {domain: reuters.com, name: Reuters, tier: "1"}
+  - {domain: apnews.com, name: AP, tier: "1"}
+  - {domain: bloomberg.com, name: Bloomberg, tier: "1"}
+  - {domain: nytimes.com, name: The New York Times, tier: "1",
+     feeds: ["https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml"]}
+  - {domain: wsj.com, name: The Wall Street Journal, tier: "1",
+     feeds: ["https://feeds.a.dj.com/rss/RSSWSJD.xml"]}
+  - {domain: washingtonpost.com, name: The Washington Post, tier: "1",
+     feeds: ["https://feeds.washingtonpost.com/rss/business/technology"]}
+  - {domain: ft.com, name: Financial Times, tier: "1"}
+  - {domain: theguardian.com, name: The Guardian, tier: "1",
+     feeds: ["https://www.theguardian.com/technology/artificialintelligenceai/rss"]}
+  - {domain: npr.org, name: NPR, tier: "1", feeds: ["https://feeds.npr.org/1019/rss.xml"]}
+  - {domain: bbc.com, name: BBC, tier: "1", feeds: ["https://feeds.bbci.co.uk/news/technology/rss.xml"]}
+  - {domain: bbc.co.uk, name: BBC, tier: "1"}
+  - {domain: axios.com, name: Axios, tier: "1"}
+  - {domain: politico.com, name: Politico, tier: "1", feeds: ["https://rss.politico.com/technology.xml"]}
+  - {domain: thehill.com, name: The Hill, tier: "1"}
+  - {domain: nbcnews.com, name: NBC News, tier: "1", feeds: ["https://feeds.nbcnews.com/nbcnews/public/tech"]}
+  - {domain: abcnews.go.com, name: ABC News, tier: "1"}
+  - {domain: cbsnews.com, name: CBS News, tier: "1"}
+  - {domain: cnn.com, name: CNN, tier: "1"}
+  - {domain: cnbc.com, name: CNBC, tier: "1", feeds: ["https://www.cnbc.com/id/19854910/device/rss/rss.html"]}
+  - {domain: time.com, name: TIME, tier: "1"}
+  - {domain: usatoday.com, name: USA Today, tier: "1"}
+  - {domain: latimes.com, name: Los Angeles Times, tier: "1"}
+  - {domain: newsweek.com, name: Newsweek, tier: "2"}
+  - {domain: semafor.com, name: Semafor, tier: "2"}
+
+  # ---- official / government (primary sources) ----
+  - {domain: ftc.gov, name: FTC, tier: official, feeds: ["https://www.ftc.gov/feeds/press-release.xml"]}
+  - {domain: ag.ny.gov, name: New York Attorney General, tier: official}
+  - {domain: oag.ca.gov, name: California Attorney General, tier: official}
+  - {domain: texasattorneygeneral.gov, name: Texas Attorney General, tier: official}
+  - {domain: doj.nh.gov, name: New Hampshire DOJ, tier: official}
+  - {domain: justice.gov, name: U.S. Department of Justice, tier: official}
+  - {domain: nist.gov, name: NIST, tier: official, feeds: ["https://www.nist.gov/news-events/news/rss.xml"]}
+  - {domain: whitehouse.gov, name: The White House, tier: official}
+  - {domain: congress.gov, name: Congress.gov, tier: official}
+  - {domain: senate.gov, name: U.S. Senate, tier: official}
+  - {domain: house.gov, name: U.S. House, tier: official}
+  - {domain: europa.eu, name: European Commission, tier: official}
+  - {domain: gov.uk, name: UK Government, tier: official}
+  - {domain: aisi.gov.uk, name: UK AI Security Institute, tier: official}
+
+  # ---- tier 2: major tech & business ----
+  - {domain: theverge.com, name: The Verge, tier: "2",
+     feeds: ["https://www.theverge.com/rss/ai-artificial-intelligence/index.xml"]}
+  - {domain: wired.com, name: WIRED, tier: "2", feeds: ["https://www.wired.com/feed/tag/ai/latest/rss"]}
+  - {domain: arstechnica.com, name: Ars Technica, tier: "2", feeds: ["https://arstechnica.com/ai/feed/"]}
+  - {domain: techcrunch.com, name: TechCrunch, tier: "2",
+     feeds: ["https://techcrunch.com/category/artificial-intelligence/feed/"]}
+  - {domain: technologyreview.com, name: MIT Technology Review, tier: "2",
+     feeds: ["https://www.technologyreview.com/feed/"]}
+  - {domain: 404media.co, name: 404 Media, tier: "2", feeds: ["https://www.404media.co/rss/"]}
+  - {domain: theatlantic.com, name: The Atlantic, tier: "2",
+     feeds: ["https://www.theatlantic.com/feed/channel/technology/"]}
+  - {domain: newyorker.com, name: The New Yorker, tier: "2"}
+  - {domain: fortune.com, name: Fortune, tier: "2"}
+  - {domain: businessinsider.com, name: Business Insider, tier: "2"}
+  - {domain: qz.com, name: Quartz, tier: "2", feeds: ["https://qz.com/rss"]}
+  - {domain: theinformation.com, name: The Information, tier: "2"}
+  - {domain: scmp.com, name: South China Morning Post, tier: "2"}
+  - {domain: statnews.com, name: STAT, tier: "2"}
+  - {domain: thenextweb.com, name: The Next Web, tier: "3", feeds: ["https://thenextweb.com/feed"]}
+  - {domain: engadget.com, name: Engadget, tier: "3"}
+  - {domain: zdnet.com, name: ZDNET, tier: "3"}
+
+  # ---- tier 3: specialist AI & tech policy ----
+  - {domain: transformernews.ai, name: Transformer, tier: "3", feeds: ["https://www.transformernews.ai/feed"]}
+  - {domain: importai.substack.com, name: Import AI, tier: "3", feeds: ["https://importai.substack.com/feed"]}
+  - {domain: techpolicy.press, name: Tech Policy Press, tier: "3", feeds: ["https://www.techpolicy.press/feed/"]}
+  - {domain: lawfaremedia.org, name: Lawfare, tier: "3"}
+  - {domain: restofworld.org, name: Rest of World, tier: "3", feeds: ["https://restofworld.org/feed/latest/"]}
+  - {domain: platformer.news, name: Platformer, tier: "3", feeds: ["https://www.platformer.news/rss/"]}
+  - {domain: garrisonlovely.substack.com, name: Garrison Lovely, tier: "3"}
+  - {domain: edweek.org, name: Education Week, tier: "3"}
+  - {domain: the74million.org, name: The 74, tier: "3"}
+  - {domain: metr.org, name: METR, tier: "3"}
+
+  # ---- company announcements (primary, self-interested) ----
+  - {domain: openai.com, name: OpenAI, tier: company, feeds: ["https://openai.com/news/rss.xml"]}
+  - {domain: anthropic.com, name: Anthropic, tier: company}
+  - {domain: deepmind.google, name: Google DeepMind, tier: company, feeds: ["https://deepmind.google/blog/rss.xml"]}
+  - {domain: blog.google, name: Google, tier: company}
+  - {domain: x.ai, name: xAI, tier: company}
+  - {domain: ai.meta.com, name: Meta AI, tier: company}
+
+  # ---- tier 4: local & regional (seen in Daily Clips; mostly reached via search feeds) ----
+  - {domain: nhpr.org, name: NHPR, tier: "4"}
+  - {domain: wxyz.com, name: WXYZ Detroit, tier: "4"}
+  - {domain: wsbtv.com, name: WSB-TV Atlanta, tier: "4"}
+  - {domain: kgun9.com, name: KGUN 9 Tucson, tier: "4"}
+  - {domain: desmoinesregister.com, name: Des Moines Register, tier: "4"}
+  - {domain: unionleader.com, name: New Hampshire Union Leader, tier: "4"}
+  - {domain: reviewjournal.com, name: Las Vegas Review-Journal, tier: "4"}
+  - {domain: freep.com, name: Detroit Free Press, tier: "4"}
+  - {domain: postandcourier.com, name: The Post and Courier, tier: "4"}
+
+  # ---- syndicators: republish wire/outlet copy; never independent corroboration ----
+  - {domain: msn.com, name: MSN, tier: syndicated}
+  - {domain: yahoo.com, name: Yahoo, tier: syndicated}
+  - {domain: aol.com, name: AOL, tier: syndicated}
+  - {domain: flipboard.com, name: Flipboard, tier: syndicated}
+  - {domain: newsbreak.com, name: NewsBreak, tier: syndicated}
+  - {domain: ground.news, name: Ground News, tier: syndicated}
+  - {domain: biztoc.com, name: BizToc, tier: syndicated}
+  - {domain: headtopics.com, name: Head Topics, tier: syndicated}
+  - {domain: marketscreener.com, name: MarketScreener, tier: syndicated}
+  - {domain: tradingview.com, name: TradingView, tier: syndicated}
+  - {domain: investing.com, name: Investing.com, tier: syndicated}
+  - {domain: benzinga.com, name: Benzinga, tier: syndicated}
+  - {domain: livemint.com, name: Mint, tier: syndicated}
+  - {domain: firstpost.com, name: Firstpost, tier: syndicated}
