@@ -8,6 +8,7 @@ from pathlib import Path
 
 from ..core.db import DB
 from .carousel.html_render import cover_slide_html, cta_slide_html, render_contact_sheet, render_pages, story_slide_html
+from .draft.lint import lint
 from .models import Story
 from .pipeline import window
 
@@ -54,6 +55,10 @@ def assemble(cfg: dict, db: DB, n: int | None = None, now: datetime | None = Non
         d["newsworthy"] = st.triage["newsworthy"]
         d["on_ramp"] = st.triage.get("on_ramp")
         d["image_url"], d["image_note"] = _slide_image(db, d)
+        # Rules can change after a draft is stored; re-run the rule checks so new rules apply retroactively.
+        fresh = lint(d["headline"], d["body"], st.triage.get("risk_flags", []),
+                     d.get("people_named"), d.get("officials_named"))
+        d["warnings"] = list(d["warnings"]) + [w for w in fresh if w not in d["warnings"]]
         (ready if d["confidence"] >= min_conf and not d["warnings"] else not_ready).append(d)
     rid = "rd_" + now.strftime("%Y%m%d")
     return Roundup(id=rid, created_at=now.isoformat(timespec="seconds"),
