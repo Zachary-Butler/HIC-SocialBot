@@ -53,6 +53,15 @@ def _outlet_fields(url_or_host: str, outlets: dict, fallback: dict | None = None
     return domain, (fallback_name or domain), "unlisted"
 
 
+def blocked(url_or_host: str, outlets: dict) -> bool:
+    """True for domains on outlets.yaml > never_source. Checked on the article link, and for Google
+    News items on the <source> host (the link is a redirect)."""
+    never = outlets.get("never_source") or set()
+    if not never or not url_or_host:
+        return False
+    return registrable_domain(url_or_host) in never
+
+
 def _entry_published(e) -> str | None:
     return _iso(e.get("published_parsed") or e.get("updated_parsed"))
 
@@ -62,7 +71,7 @@ def parse_outlet_feed(content: bytes, feed_url: str, outlets: dict, outlet: dict
     items = []
     for e in feedparser.parse(content).entries:
         link, title = (e.get("link") or "").strip(), clean_text(e.get("title") or "")
-        if not link or not title:
+        if not link or not title or blocked(link, outlets):
             continue
         published = _entry_published(e)
         if published and datetime.fromisoformat(published) < since:
@@ -84,7 +93,7 @@ def parse_google(content: bytes, query: str, outlets: dict, now: datetime, since
         src = e.get("source") or {}
         src_href, src_title = src.get("href") or "", clean_text(src.get("title") or "")
         title = strip_outlet_suffix(clean_text(e.get("title") or ""), src_title)
-        if not link or not title:
+        if not link or not title or blocked(src_href, outlets):
             continue
         published = _entry_published(e)
         if published and datetime.fromisoformat(published) < since:
@@ -103,7 +112,7 @@ def parse_bing(content: bytes, query: str, outlets: dict, now: datetime, since: 
     for e in feedparser.parse(content).entries:
         link = unwrap_bing((e.get("link") or "").strip())
         title = clean_text(e.get("title") or "")
-        if not link or not title or is_aggregator(link):
+        if not link or not title or is_aggregator(link) or blocked(link, outlets):
             continue
         published = _entry_published(e)
         if published and datetime.fromisoformat(published) < since:

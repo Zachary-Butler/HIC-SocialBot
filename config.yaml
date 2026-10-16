@@ -17,6 +17,8 @@ news:
   outlets_file: outlets.yaml
   window_days: 7                  # how far back a weekly roundup looks
   max_stories: 9                  # story slides to pre-build (roundup uses 3-6, the rest are alternates)
+  roundup_slides: 5               # story slides in the default roundup; the rest are alternates
+  min_confidence: 60              # slides below this (writer's own confidence) are alternates, not ready
   http_timeout_seconds: 20
 
   # Search feeds reach outlets without RSS (Reuters, AP, Bloomberg, Axios, local TV) and surface
@@ -99,3 +101,11 @@ buffer:
     tiktok: 6a63d2f0e2638b94d7cbe734
     youtube: 6a629a82e2638b94d7c3238b
     bluesky: 6a63d586e2638b94d7cc2700     # slot to be swapped for LinkedIn
+
+roundup:
+  cover_title: "What Happened in AI This Week"
+  cover_kicker: "& what you can do about it"
+  cta_headline: "Want To Do Something Beyond Worry About AI?"
+  cta_body: "AI Reality Check is a nationwide campaign to educate communities about AI: what it really is, the risks it creates, and what we can all do about it. On Saturday, November 14, presenters run it in living rooms and libraries across the country. Sign up to present one."
+  cta_url_text: "RealityCheckHQ.Org"
+  cta_footer: "LINK IN BIO"

@@ -51,6 +51,12 @@ CREATE TABLE IF NOT EXISTS approvals (
     at TEXT NOT NULL,
     note TEXT NOT NULL DEFAULT ''
 );
+CREATE TABLE IF NOT EXISTS roundups (
+    id TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL,
+    status TEXT NOT NULL,
+    data TEXT NOT NULL
+);
 CREATE INDEX IF NOT EXISTS items_story ON items(story_id);
 CREATE INDEX IF NOT EXISTS stories_last_seen ON stories(last_seen);
 CREATE INDEX IF NOT EXISTS drafts_story ON drafts(story_id);
@@ -136,3 +142,19 @@ class DB:
         rows = self.conn.execute("SELECT * FROM approvals WHERE target_id = ? ORDER BY id", (target_id,))
         return [Approval(id=r["id"], kind=r["kind"], target_id=r["target_id"], approver=r["approver"],
                          action=r["action"], at=r["at"], note=r["note"]) for r in rows]
+
+    # ---- roundups (an ordered set of slide drafts proposed to a human) ----
+    def save_roundup(self, roundup_id: str, status: str, data: dict) -> None:
+        with self.conn:
+            self.conn.execute(
+                "INSERT INTO roundups (id, created_at, status, data) VALUES (?,?,?,?) "
+                "ON CONFLICT(id) DO UPDATE SET status=excluded.status, data=excluded.data",
+                (roundup_id, _now(), status, json.dumps(data, ensure_ascii=False)))
+
+    def get_roundup(self, roundup_id: str) -> dict | None:
+        row = self.conn.execute("SELECT data, status FROM roundups WHERE id = ?", (roundup_id,)).fetchone()
+        if not row:
+            return None
+        d = json.loads(row["data"])
+        d["status"] = row["status"]
+        return d

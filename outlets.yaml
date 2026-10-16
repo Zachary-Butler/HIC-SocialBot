@@ -140,3 +140,31 @@ outlets:
   - {domain: benzinga.com, name: Benzinga, tier: syndicated}
   - {domain: livemint.com, name: Mint, tier: syndicated}
   - {domain: firstpost.com, name: Firstpost, tier: syndicated}
+  - {domain: einnews.com, name: EIN News, tier: syndicated}
+  - {domain: einpresswire.com, name: EIN Presswire, tier: syndicated}
+  - {domain: prnewswire.com, name: PR Newswire, tier: syndicated}
+  - {domain: businesswire.com, name: Business Wire, tier: syndicated}
+  - {domain: globenewswire.com, name: GlobeNewswire, tier: syndicated}
+
+# Never used as a source of text or facts for HIC copy, never counted as coverage: items from these
+# domains are dropped at ingestion. Partisan or unreliable outlets in either political direction;
+# a nonpartisan 501(c)(3) does not build posts on them. Zach and Will own this list.
+never_source:
+  - breitbart.com
+  - dailycaller.com
+  - thegatewaypundit.com
+  - infowars.com
+  - zerohedge.com
+  - theepochtimes.com
+  - naturalnews.com
+  - dailywire.com
+  - newsmax.com
+  - oann.com
+  - rt.com
+  - sputnikglobe.com
+  - rawstory.com
+  - dailykos.com
+  - palmerreport.com
+  - occupydemocrats.com
+  - alternet.org
+  - wnd.com

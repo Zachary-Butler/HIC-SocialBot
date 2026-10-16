@@ -14,6 +14,7 @@ from .news.pipeline import build_stories, gather, window
 from .news.resolve import resolve_leads
 from .news.triage import run_triage
 from .news.commands import cmd_news_draft, cmd_news_roundup
+from .news.roundup import cmd_news_preview
 
 
 def _age(story: Story, now: datetime) -> str:
@@ -159,6 +160,9 @@ def main(argv=None) -> int:
     r.add_argument("--reuse-llm", action="store_true", help="replay saved Claude answers (no API calls)")
     r.add_argument("--redraft", action="store_true", help="redraft stories that already have a draft")
     r.add_argument("--refresh", action="store_true", help="re-fetch article text instead of using the cache")
+    pv = nsub.add_parser("preview", help="assemble the roundup from drafted slides and render a contact sheet")
+    pv.add_argument("--n", type=int, help="story slides in the roundup (default news.roundup_slides)")
+    pv.add_argument("--no-render", action="store_true", help="assemble only; skip PNG rendering")
     f = nsub.add_parser("feeds", help="feed maintenance")
     f.add_argument("action", choices=["check"])
 
@@ -171,6 +175,8 @@ def main(argv=None) -> int:
             return cmd_news_draft(cfg, args)
         if args.cmd == "news" and args.news_cmd == "roundup":
             return cmd_news_roundup(cfg, args)
+        if args.cmd == "news" and args.news_cmd == "preview":
+            return cmd_news_preview(cfg, args)
         if args.cmd == "news" and args.news_cmd == "feeds":
             return cmd_feeds_check(cfg, args)
     except ConfigError as e:

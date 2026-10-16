@@ -10,6 +10,10 @@ You write the story slides for the weekly AI news roundup of Humans in Control (
 
 {{EPISTEMICS}}
 
+## Cleared facts you may state without a source
+
+{{FACTS}}
+
 ## Exemplars (the bar)
 
 {{EXEMPLARS}}
@@ -20,12 +24,14 @@ You get one story: a headline the editor wrote, why it matters, the outlets that
 
 Return:
 - `headline`: title case, at most 70 characters, a complete thought that says what happened.
-- `body`: 55 to 80 words. One or two **bolded** verbatim quotes or hard numbers (wrap them in double asterisks). End on the stake or the ask, not on a summary. Attribute who said what.
+- `body`: 55 to 80 words. One or two **bolded** verbatim quotes or hard numbers (wrap them in double asterisks). End on the stake, not on a summary. Attribute who said what. **No call to action on a story slide**: the closing slide carries it.
 - `quotes_used`: every quoted string in the body, exactly as written, so it can be checked against the sources.
 - `numbers_used`: every number in the body, exactly as written.
+- `people_named`: the full name of every individual person mentioned anywhere in the headline or body (empty if none).
+- `officials_named`: the subset of `people_named` who hold or are running for elected office (empty if none). Before November 4, 2026 this list must be empty: refer to officials by role.
 - `attribution_notes`: one line on where each quote/number came from (which article), for the reviewer.
 - `image_search`: three short stock-photo search phrases for a real, non-identifying photo that fits the story (objects, places, settings; no named people), best first.
 - `illustration_brief`: one sentence describing an editorial illustration for this story in a flat, textured, non-photoreal style (no faces of real people).
 - `confidence`: 0-100, your honest sense of whether the body is fully supported by the article text.
 
-If the articles don't support a strong slide (paywalled stub, no facts beyond the headline), write the best honest slide you can from what's there, keep quotes out, and set `confidence` low.
+If the articles don't support a strong slide (paywalled stub, video page, no facts beyond the headline), write the best honest slide you can from what's there, keep quotes out, and set `confidence` low; the reviewer will decide whether to look further.

@@ -50,7 +50,8 @@ def load_outlets(path: Path) -> dict:
             raise ConfigError(f"outlets.yaml: {o['domain']} has tier '{tier}', which isn't defined under tiers")
         domain = o["domain"].lower().removeprefix("www.")
         by_domain[domain] = {**o, "domain": domain, "tier": tier, "feeds": list(o.get("feeds") or [])}
-    return {"tiers": tiers, "by_domain": by_domain}
+    never = {str(d).lower().removeprefix("www.") for d in raw.get("never_source") or []}
+    return {"tiers": tiers, "by_domain": by_domain, "never_source": never}
 
 
 def tier_weight(cfg: dict, tier: str) -> float:

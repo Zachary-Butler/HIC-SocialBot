@@ -23,6 +23,10 @@ GOOGLE = b"""<?xml version="1.0"?><rss version="2.0"><channel><title>"AI" - Goog
 <link>https://news.google.com/rss/articles/CBMidef?oc=5</link>
 <pubDate>Wed, 14 Oct 2026 18:00:00 GMT</pubDate>
 <source url="https://www.wxyz.com">WXYZ 7 News Detroit</source></item>
+<item><title>Chatbot company collapses - Breitbart</title>
+<link>https://news.google.com/rss/articles/CBMighi?oc=5</link>
+<pubDate>Wed, 14 Oct 2026 18:00:00 GMT</pubDate>
+<source url="https://www.breitbart.com">Breitbart</source></item>
 </channel></rss>"""
 
 BING = b"""<?xml version="1.0"?><rss xmlns:News="https://www.bing.com:443/news/search?q=AI&amp;format=rss" version="2.0">
@@ -52,7 +56,7 @@ class SourceParsingTests(unittest.TestCase):
 
     def test_google_uses_source_tag_for_outlet_and_strips_suffix(self):
         items = parse_google(GOOGLE, "q", self.outlets, NOW, SINCE)
-        self.assertEqual(len(items), 2)
+        self.assertEqual(len(items), 2)                       # the never_source item is dropped
         reuters, wxyz = items
         self.assertEqual(reuters.title, "Forty state AGs demand child protections in Character.AI bankruptcy sale")
         self.assertEqual((reuters.outlet_name, reuters.tier), ("Reuters", "1"))

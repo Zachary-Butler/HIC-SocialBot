@@ -12,6 +12,7 @@ from .extract import Article, fetch_article
 from .models import Item, Story
 from .pipeline import window
 from .resolve import resolve_story
+from .sources.feeds import blocked
 
 ARTICLES_PER_STORY = 2      # how many usable articles we want per story
 MAX_FETCH_ATTEMPTS = 8      # how many outlets we'll try to get them
@@ -23,7 +24,7 @@ def fetch_order(story: Story, cfg: dict) -> list[Item]:
     by = cfg["outlets"]["by_domain"]
     def key(i: Item):
         o = by.get(i.outlet_domain) or {}
-        return (i.tier == "syndicated", bool(o.get("paywall")), not i.resolved, -tier_weight(cfg, i.tier))
+        return (i.tier == "syndicated", bool(o.get("paywall")), i.tier == "unlisted", not i.resolved, -tier_weight(cfg, i.tier))
     return sorted(story.items, key=key)
 
 
@@ -35,6 +36,8 @@ def articles_for(cfg: dict, db: DB, story: Story, http, refresh: bool = False) -
     for it in fetch_order(story, cfg):
         if not it.resolved or it.outlet_domain in domains or it.tier == "syndicated":
             continue
+        if blocked(it.url, cfg["outlets"]) or blocked(it.outlet_domain, cfg["outlets"]):
+            continue                       # never_source: stories stored before the list existed
         if attempts >= MAX_FETCH_ATTEMPTS or len([a for a in picked if a.ok]) >= ARTICLES_PER_STORY:
             break
         key = it.canonical_url or it.url
@@ -147,9 +150,11 @@ def cmd_news_roundup(cfg: dict, args) -> int:
             results.append((story, d, articles))
         print(f"\n{llm.summary()}")
         print("\nRoundup so far:")
+        min_conf = int(cfg["news"].get("min_confidence", 60))
         for story, d, _ in results:
             flag = f"  ⚠ {len(d.warnings)} warning(s)" if d.warnings else ""
-            print(f"  - {d.headline}  (confidence {d.confidence}){flag}")
+            ready = "" if d.confidence >= min_conf and not d.warnings else "  NOT READY"
+            print(f"  - {d.headline}  (confidence {d.confidence}){flag}{ready}")
         return 0
     finally:
         http.close()

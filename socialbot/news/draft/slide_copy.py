@@ -25,13 +25,15 @@ SCHEMA = {
         "body": {"type": "string"},
         "quotes_used": {"type": "array", "items": {"type": "string"}},
         "numbers_used": {"type": "array", "items": {"type": "string"}},
+        "people_named": {"type": "array", "items": {"type": "string"}},
+        "officials_named": {"type": "array", "items": {"type": "string"}},
         "attribution_notes": {"type": "string"},
         "image_search": {"type": "array", "items": {"type": "string"}},
         "illustration_brief": {"type": "string"},
         "confidence": {"type": "integer"},
     },
-    "required": ["headline", "body", "quotes_used", "numbers_used", "attribution_notes", "image_search",
-                 "illustration_brief", "confidence"],
+    "required": ["headline", "body", "quotes_used", "numbers_used", "people_named", "officials_named",
+                 "attribution_notes", "image_search", "illustration_brief", "confidence"],
     "additionalProperties": False,
 }
 
@@ -52,6 +54,8 @@ class SlideDraft:
     warnings: list[str] = field(default_factory=list)
     redrafted: bool = False
     model: str = ""
+    people_named: list[str] = field(default_factory=list)
+    officials_named: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -61,11 +65,16 @@ def _read(name: str) -> str:
     return (VOICE_DIR / name).read_text(encoding="utf-8")
 
 
+def cleared_facts() -> str:
+    return _read("facts.md")
+
+
 def system_prompt() -> str:
     return (Path(PROMPT).read_text(encoding="utf-8")
             .replace("{{VOICE}}", _read("social-voice.md"))
             .replace("{{COMPLIANCE}}", _read("rules/compliance.md"))
             .replace("{{EPISTEMICS}}", _read("rules/epistemics.md"))
+            .replace("{{FACTS}}", cleared_facts())
             .replace("{{EXEMPLARS}}", _read("exemplars.md")))
 
 
@@ -107,9 +116,9 @@ def _format_checks(draft: dict, res: VerifyResult) -> list[str]:
 
 
 def verification_corpus(articles: list[Article]) -> list[str]:
-    """Article text plus the ways a draft may write the article's date: the body often says
-    "Tuesday" while the actual date lives in the page metadata."""
-    return [a.text + "\n" + date_variants(a.published_at) for a in articles if a.text]
+    """Article text plus the ways a draft may write the article's date (the body often says
+    "Tuesday" while the actual date lives in the page metadata), plus HIC's cleared facts."""
+    return [a.text + "\n" + date_variants(a.published_at) for a in articles if a.text] + [cleared_facts()]
 
 
 def draft_slide(cfg: dict, llm: LLM, story: Story, articles: list[Article], model: str | None = None) -> SlideDraft:
@@ -118,20 +127,22 @@ def draft_slide(cfg: dict, llm: LLM, story: Story, articles: list[Article], mode
     usable = [a for a in articles if a.ok] or articles
     sources = verification_corpus(usable)
     system = system_prompt()
+    flags = (story.triage or {}).get("risk_flags", [])
+
+    def check(out: dict) -> tuple[VerifyResult, list[str]]:
+        res = verify(out["body"] + " " + out["headline"], sources)
+        return res, _format_checks(out, res) + lint(out["headline"], out["body"], flags,
+                                                   out.get("people_named"), out.get("officials_named"))
 
     out = llm.json_call("slide_copy", model, system, format_story(story, usable), SCHEMA, effort=effort)
-    res = verify(out["body"] + " " + out["headline"], sources)
-    warnings = _format_checks(out, res)
+    res, warnings = check(out)
     redrafted = False
     if warnings:
         feedback = ("Fix these problems and return the full slide again: " + "; ".join(warnings)
                     + ". Remove or replace anything the sources don't support verbatim.")
         out = llm.json_call("slide_copy", model, system, format_story(story, usable, feedback), SCHEMA, effort=effort)
-        res = verify(out["body"] + " " + out["headline"], sources)
-        warnings = _format_checks(out, res)
+        res, warnings = check(out)
         redrafted = True
-    # Rule checks (pre-election naming, party labels, deceased-minor names) are warnings for the human.
-    warnings += lint(out["headline"], out["body"], (story.triage or {}).get("risk_flags", []))
 
     return SlideDraft(
         story_id=story.id, headline=out["headline"].strip(), body=out["body"].strip(),
@@ -139,4 +150,5 @@ def draft_slide(cfg: dict, llm: LLM, story: Story, articles: list[Article], mode
         attribution_notes=out.get("attribution_notes", ""), image_search=out.get("image_search", [])[:3],
         illustration_brief=out.get("illustration_brief", ""), confidence=int(out.get("confidence", 0)),
         sources=[a.final_url or a.url for a in usable], verification=asdict(res),
-        warnings=warnings, redrafted=redrafted, model=model)
+        warnings=warnings, redrafted=redrafted, model=model,
+        people_named=out.get("people_named", []), officials_named=out.get("officials_named", []))
