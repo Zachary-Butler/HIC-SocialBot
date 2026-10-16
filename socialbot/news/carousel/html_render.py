@@ -4,6 +4,7 @@ This is the fallback and preview path. The primary path fills the Canva master (
 design stays editable by hand; this renderer approximates that design closely enough to review
 copy and layout, and produces real PNGs if Canva is unavailable."""
 
+import base64
 import html
 import re
 from pathlib import Path
@@ -44,6 +45,10 @@ def body_to_html(body: str) -> str:
     return _BOLD.sub(r"<b>\1</b>", html.escape(body))
 
 
+def _doc(inner: str) -> str:
+    return f'<!doctype html><html><head><meta charset="utf-8">{FONTS}<style>{CSS}</style></head><body>{inner}</body></html>'
+
+
 def story_slide_html(headline: str, body: str, image_url: str | None, illustration_brief: str,
                      index: int, total: int) -> str:
     h_cls = "headline long" if len(headline) > 56 else "headline"
@@ -52,28 +57,30 @@ def story_slide_html(headline: str, body: str, image_url: str | None, illustrati
         photo = f'<div class="photo" style="background-image:url(\'{html.escape(image_url, quote=True)}\')"></div>'
     else:
         photo = f'<div class="photo empty"><div class="brief">Illustration: {html.escape(illustration_brief)}</div></div>'
-    return (f'<!doctype html><html><head><meta charset="utf-8">{FONTS}<style>{CSS}</style></head><body>'
-            f'<div class="slide">{photo}<div class="panel"><div class="{h_cls}">{html.escape(headline)}</div>'
-            f'<div class="{b_cls}">{body_to_html(body)}</div></div><div class="num">{index}/{total}</div></div></body></html>')
+    return _doc(f'<div class="slide">{photo}<div class="panel"><div class="{h_cls}">{html.escape(headline)}</div>'
+                f'<div class="{b_cls}">{body_to_html(body)}</div></div><div class="num">{index}/{total}</div></div>')
 
 
 def cover_slide_html(title: str, kicker: str) -> str:
-    return (f'<!doctype html><html><head><meta charset="utf-8">{FONTS}<style>{CSS}</style></head><body>'
-            f'<div class="slide cover"><div class="title">{html.escape(title)}</div><div class="kicker">{html.escape(kicker)}</div>'
-            f'<div class="art"></div></div></body></html>')
+    return _doc(f'<div class="slide cover"><div class="title">{html.escape(title)}</div>'
+                f'<div class="kicker">{html.escape(kicker)}</div><div class="art"></div></div>')
 
 
 def cta_slide_html(headline: str, body: str, url_text: str, footer: str, image_url: str | None = None) -> str:
     photo = (f'<div class="photo" style="background-image:url(\'{html.escape(image_url, quote=True)}\')"></div>'
              if image_url else '<div class="photo empty"></div>')
-    return (f'<!doctype html><html><head><meta charset="utf-8">{FONTS}<style>{CSS}</style></head><body>'
-            f'<div class="slide cta">{photo}<div class="panel"><div class="headline">{html.escape(headline)}</div>'
-            f'<div class="body">{body_to_html(body)}</div><div class="url">{html.escape(url_text)}</div>'
-            f'<div class="foot">{html.escape(footer)}</div></div></div></body></html>')
+    return _doc(f'<div class="slide cta">{photo}<div class="panel"><div class="headline">{html.escape(headline)}</div>'
+                f'<div class="body">{body_to_html(body)}</div><div class="url">{html.escape(url_text)}</div>'
+                f'<div class="foot">{html.escape(footer)}</div></div></div>')
+
+
+def _data_uri(path: Path) -> str:
+    return "data:image/png;base64," + base64.b64encode(path.read_bytes()).decode("ascii")
 
 
 def contact_sheet_html(png_paths: list[Path], title: str) -> str:
-    cells = "".join(f'<figure><img src="{p.resolve().as_uri()}"><figcaption>{i + 1}</figcaption></figure>'
+    # Data URIs: a page set from a string has no origin, so file:// images would not load.
+    cells = "".join(f'<figure><img src="{_data_uri(p)}"><figcaption>{i + 1}</figcaption></figure>'
                     for i, p in enumerate(png_paths))
     return (f'<!doctype html><html><head><meta charset="utf-8"><style>'
             f'body{{margin:0;padding:24px;background:#222;color:#eee;font-family:Arial,sans-serif}}'
