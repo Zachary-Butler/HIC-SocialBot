@@ -1,6 +1,9 @@
 """Fetch an article and pull out what drafting and verification need: the text, the byline and
 date, and the page's main image with whatever credit the page exposes. Nothing here is trusted
-content; it is evidence for the verifier and raw material for the writer."""
+content; it is evidence for the verifier and raw material for the writer.
+
+Two fetch paths: a plain HTTP GET with browser headers, and, when that is blocked or returns a
+stub, a headless browser (Playwright) that renders the page like a reader would."""
 
 import re
 from dataclasses import asdict, dataclass
@@ -9,6 +12,7 @@ from datetime import datetime, timezone
 import trafilatura
 
 MIN_TEXT = 300           # less than this and we assume a paywall or a video page
+BLOCKED_STATUS = ("401", "403", "406", "429", "503")
 
 _META = re.compile(r'<meta\s+[^>]*?(?:property|name)=["\']([^"\']+)["\'][^>]*?content=["\']([^"\']*)["\']', re.I)
 _META_REV = re.compile(r'<meta\s+[^>]*?content=["\']([^"\']*)["\'][^>]*?(?:property|name)=["\']([^"\']+)["\']', re.I)
@@ -30,6 +34,7 @@ class Article:
     fetched_at: str = ""
     ok: bool = False
     error: str = ""
+    via: str = ""               # "http" or "browser"
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -81,13 +86,61 @@ def parse_article(html: str, url: str, now: datetime | None = None) -> Article:
     return art
 
 
-def fetch_article(http, url: str, now: datetime | None = None) -> Article:
+def fetch_html(http, url: str) -> tuple[str, str, str]:
+    """Plain GET. Returns (html, final_url, error)."""
     try:
         r = http.get(url)
         r.raise_for_status()
+        return r.text, str(r.url), ""
     except Exception as e:
-        return Article(url=url, final_url=url, ok=False, error=f"fetch: {type(e).__name__}: {str(e)[:120]}",
-                       fetched_at=(now or datetime.now(timezone.utc)).isoformat(timespec="seconds"))
-    art = parse_article(r.text, url, now)
-    art.final_url = str(r.url)
+        return "", url, f"fetch: {type(e).__name__}: {str(e)[:120]}"
+
+
+def render_html(url: str, timeout_ms: int = 30000) -> tuple[str, str, str]:
+    """Headless Chromium. Used only when the plain fetch is blocked or returns a stub."""
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        return "", url, "render: playwright not installed"
+    from ..core.http import BROWSER_UA
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            try:
+                ctx = browser.new_context(user_agent=BROWSER_UA, locale="en-US", viewport={"width": 1280, "height": 2000})
+                page = ctx.new_page()
+                page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
+                page.wait_for_timeout(1500)          # let late-loading article bodies settle
+                return page.content(), page.url, ""
+            finally:
+                browser.close()
+    except Exception as e:
+        return "", url, f"render: {type(e).__name__}: {str(e)[:120]}"
+
+
+def _should_render(art: Article | None, error: str) -> bool:
+    if error:
+        return any(code in error for code in BLOCKED_STATUS) or "fetch:" in error
+    return art is not None and not art.ok
+
+
+def fetch_article(http, url: str, now: datetime | None = None, allow_render: bool = True) -> Article:
+    now = now or datetime.now(timezone.utc)
+    html, final_url, error = fetch_html(http, url)
+    art = None
+    if html:
+        art = parse_article(html, url, now)
+        art.final_url, art.via = final_url, "http"
+    if allow_render and _should_render(art, error):
+        html2, final2, err2 = render_html(url)
+        if html2:
+            art2 = parse_article(html2, url, now)
+            art2.final_url, art2.via = final2, "browser"
+            if art2.ok or art is None:
+                art = art2
+        elif art is None:
+            error = f"{error}; {err2}"
+    if art is None:
+        art = Article(url=url, final_url=final_url, ok=False, error=error or "no content",
+                      fetched_at=now.isoformat(timespec="seconds"))
     return art

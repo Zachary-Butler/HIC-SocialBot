@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass, field
 from datetime import datetime
 
-_QUOTE_RE = re.compile(r'["“”]([^"“”]{12,}?)["“”]')
+_QUOTE_SPLIT = re.compile(r'["“”]')
 # A number, optionally with $ in front and a unit after. "%" needs no word boundary; word units do.
 _NUMBER_RE = re.compile(r"\$?\d(?:[\d,]*\d)?(?:\.\d+)?(?:\s?(?:%|(?:percent|million|billion|trillion|k|M|B)\b))?", re.I)
 _YEAR_RE = re.compile(r"^(19|20)\d{2}$")
@@ -20,7 +20,16 @@ def normalize(s: str) -> str:
 
 
 def quotes_in(text: str) -> list[str]:
-    return [q.strip() for q in _QUOTE_RE.findall(text)]
+    """Quoted passages, pairing quote marks in order (1st with 2nd, 3rd with 4th). A lazy regex
+    would let the closing mark of one quote pair with the opening mark of the next when the first
+    quote is short. Single words in quotes ("no") are scare quotes, not citations, and are skipped."""
+    parts = _QUOTE_SPLIT.split(text)
+    out = []
+    for i in range(1, len(parts) - 1, 2):          # odd segments are inside complete pairs
+        q = parts[i].strip()
+        if len(q.split()) >= 2 or len(q) >= 8:
+            out.append(q)
+    return out
 
 
 def numbers_in(text: str) -> list[str]:

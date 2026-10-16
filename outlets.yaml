@@ -26,16 +26,16 @@ tiers:
 
 outlets:
   # ---- tier 1: wire / national ----
-  - {domain: reuters.com, name: Reuters, tier: "1"}
+  - {domain: reuters.com, name: Reuters, tier: "1", paywall: true}
   - {domain: apnews.com, name: AP, tier: "1"}
-  - {domain: bloomberg.com, name: Bloomberg, tier: "1"}
-  - {domain: nytimes.com, name: The New York Times, tier: "1",
+  - {domain: bloomberg.com, name: Bloomberg, tier: "1", paywall: true}
+  - {domain: nytimes.com, name: The New York Times, tier: "1", paywall: true,
      feeds: ["https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml"]}
-  - {domain: wsj.com, name: The Wall Street Journal, tier: "1",
+  - {domain: wsj.com, name: The Wall Street Journal, tier: "1", paywall: true,
      feeds: ["https://feeds.a.dj.com/rss/RSSWSJD.xml"]}
-  - {domain: washingtonpost.com, name: The Washington Post, tier: "1",
+  - {domain: washingtonpost.com, name: The Washington Post, tier: "1", paywall: true,
      feeds: ["https://feeds.washingtonpost.com/rss/business/technology"]}
-  - {domain: ft.com, name: Financial Times, tier: "1"}
+  - {domain: ft.com, name: Financial Times, tier: "1", paywall: true}
   - {domain: theguardian.com, name: The Guardian, tier: "1",
      feeds: ["https://www.theguardian.com/technology/artificialintelligenceai/rss"]}
   - {domain: npr.org, name: NPR, tier: "1", feeds: ["https://feeds.npr.org/1019/rss.xml"]}
@@ -83,11 +83,11 @@ outlets:
   - {domain: 404media.co, name: 404 Media, tier: "2", feeds: ["https://www.404media.co/rss/"]}
   - {domain: theatlantic.com, name: The Atlantic, tier: "2",
      feeds: ["https://www.theatlantic.com/feed/channel/technology/"]}
-  - {domain: newyorker.com, name: The New Yorker, tier: "2"}
+  - {domain: newyorker.com, name: The New Yorker, tier: "2", paywall: true}
   - {domain: fortune.com, name: Fortune, tier: "2"}
   - {domain: businessinsider.com, name: Business Insider, tier: "2"}
   - {domain: qz.com, name: Quartz, tier: "2", feeds: ["https://qz.com/rss"]}
-  - {domain: theinformation.com, name: The Information, tier: "2"}
+  - {domain: theinformation.com, name: The Information, tier: "2", paywall: true}
   - {domain: scmp.com, name: South China Morning Post, tier: "2"}
   - {domain: statnews.com, name: STAT, tier: "2"}
   - {domain: thenextweb.com, name: The Next Web, tier: "3", feeds: ["https://thenextweb.com/feed"]}

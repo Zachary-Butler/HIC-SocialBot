@@ -86,3 +86,16 @@ news:
     recency_half_life_days: 3
     title_similarity: 82            # rapidfuzz token_set_ratio threshold for "same story"
     cluster_max_days_apart: 4
+
+buffer:
+  organization_id: 6a6296a6d46977cbfb28a529       # "Humans in Control" in Buffer
+  publish_mode: will_approves      # will_approves: posts land in Buffer's Approvals tab for Will (needsApproval=true)
+                                   # zach_approves: straight to the queue/slot per the approval action
+  channels:                        # from Buffer list_channels, Oct 16 2026
+    instagram: 6a6298cbe2638b94d7c31e25
+    facebook: 6a629943e2638b94d7c31f9c
+    twitter: 6a639843e2638b94d7c9bc42
+    threads: 6aa8480aea19ca0bde4184ea
+    tiktok: 6a63d2f0e2638b94d7cbe734
+    youtube: 6a629a82e2638b94d7c3238b
+    bluesky: 6a63d586e2638b94d7cc2700     # slot to be swapped for LinkedIn

@@ -3,35 +3,49 @@ draft the whole roundup."""
 
 from datetime import datetime, timezone
 
+from ..core.config import tier_weight
 from ..core.db import DB
 from ..core import http as http_mod
 from ..core.llm import LLM, LLMError
 from .draft.slide_copy import SlideDraft, draft_slide
 from .extract import Article, fetch_article
-from .models import Story
+from .models import Item, Story
 from .pipeline import window
 from .resolve import resolve_story
 
-ARTICLES_PER_STORY = 2
+ARTICLES_PER_STORY = 2      # how many usable articles we want per story
+MAX_FETCH_ATTEMPTS = 8      # how many outlets we'll try to get them
+
+
+def fetch_order(story: Story, cfg: dict) -> list[Item]:
+    """Which outlets to try first for article text: not syndicators, not paywalled, resolved URLs,
+    best tier. (Display order stays tier-first; this is only for fetching.)"""
+    by = cfg["outlets"]["by_domain"]
+    def key(i: Item):
+        o = by.get(i.outlet_domain) or {}
+        return (i.tier == "syndicated", bool(o.get("paywall")), not i.resolved, -tier_weight(cfg, i.tier))
+    return sorted(story.items, key=key)
 
 
 def articles_for(cfg: dict, db: DB, story: Story, http, refresh: bool = False) -> list[Article]:
-    """Fetch (or load from cache) the text of the best `ARTICLES_PER_STORY` articles for a story:
-    distinct outlets, resolved URLs, syndicators last."""
-    resolve_story(story, cfg, max_items=3)
-    picked, domains = [], set()
-    for it in story.items:
+    """Fetch (or load from cache) the text of up to `ARTICLES_PER_STORY` usable articles for a
+    story, from distinct outlets, trying up to `MAX_FETCH_ATTEMPTS` of them."""
+    resolve_story(story, cfg, max_items=6)
+    picked, domains, attempts = [], set(), 0
+    for it in fetch_order(story, cfg):
         if not it.resolved or it.outlet_domain in domains or it.tier == "syndicated":
             continue
+        if attempts >= MAX_FETCH_ATTEMPTS or len([a for a in picked if a.ok]) >= ARTICLES_PER_STORY:
+            break
         key = it.canonical_url or it.url
         art = None if refresh else db.get_article(key)
-        if art is None:
+        # Retry a cached failure if we never tried the browser path for it (older cache entries).
+        if art is None or (not art.ok and (refresh or art.via != "browser")):
             art = fetch_article(http, it.url, datetime.now(timezone.utc))
             db.save_article(key, art)
+        attempts += 1
         domains.add(it.outlet_domain)
         picked.append(art)
-        if len([a for a in picked if a.ok]) >= ARTICLES_PER_STORY or len(picked) >= ARTICLES_PER_STORY + 2:
-            break
     return picked
 
 
@@ -55,9 +69,14 @@ def print_draft(d: SlideDraft, articles: list[Article]) -> None:
         print(f"    - {a.final_url or a.url}  [{status}]" + (f"  image: {a.image_url}" if a.image_url else ""))
 
 
-def cmd_news_draft(cfg: dict, args) -> int:
+def _open(cfg: dict):
     db = DB(cfg["paths"]["data_dir"] / "socialbot.sqlite")
-    http = http_mod.client(float(cfg["news"].get("http_timeout_seconds", 20)))
+    http = http_mod.browser_client(float(cfg["news"].get("http_timeout_seconds", 20)) + 5)
+    return db, http
+
+
+def cmd_news_draft(cfg: dict, args) -> int:
+    db, http = _open(cfg)
     try:
         story = db.get_story(args.story_id)
         if not story:
@@ -93,8 +112,7 @@ def cmd_news_draft(cfg: dict, args) -> int:
 
 def cmd_news_roundup(cfg: dict, args) -> int:
     """Draft slides for the top draftable stories in the store, so the human sees finished slides."""
-    db = DB(cfg["paths"]["data_dir"] / "socialbot.sqlite")
-    http = http_mod.client(float(cfg["news"].get("http_timeout_seconds", 20)))
+    db, http = _open(cfg)
     try:
         now, since = window(cfg)
         stories = [s for s in db.load_stories(since.isoformat(timespec="seconds"))
@@ -115,9 +133,9 @@ def cmd_news_roundup(cfg: dict, args) -> int:
                 print("  using existing draft (pass --redraft to redo)")
                 results.append((story, SlideDraft(**existing), []))
                 continue
-            articles = articles_for(cfg, db, story, http)
+            articles = articles_for(cfg, db, story, http, refresh=args.refresh)
             if not any(a.ok for a in articles):
-                print("  no usable article text; skipped: " + "; ".join(a.error for a in articles))
+                print("  no usable article text; skipped: " + "; ".join(f"{a.url[:60]}: {a.error[:70]}" for a in articles))
                 continue
             try:
                 d = draft_slide(cfg, llm, story, articles)

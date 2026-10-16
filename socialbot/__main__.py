@@ -158,6 +158,7 @@ def main(argv=None) -> int:
     r.add_argument("--n", type=int, help="how many stories (default news.max_stories)")
     r.add_argument("--reuse-llm", action="store_true", help="replay saved Claude answers (no API calls)")
     r.add_argument("--redraft", action="store_true", help="redraft stories that already have a draft")
+    r.add_argument("--refresh", action="store_true", help="re-fetch article text instead of using the cache")
     f = nsub.add_parser("feeds", help="feed maintenance")
     f.add_argument("action", choices=["check"])
 

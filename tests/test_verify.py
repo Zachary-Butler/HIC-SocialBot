@@ -32,6 +32,13 @@ class VerifyTests(unittest.TestCase):
         res = verify("Disney bid **$20 million**. The filing says “the children’s data stays protected.”", [src])
         self.assertTrue(res.ok, res.summary())
 
+    def test_two_bolded_quotes_pair_correctly(self):
+        src = 'Models could be "months away" from copying themselves, a future "awash with agents" on all hardware.'
+        draft = 'Anthropic says models are **"months away"** from copying themselves; a future **"awash with agents"** awaits.'
+        res = verify(draft, [src])
+        self.assertEqual(res.quotes_found, ["months away", "awash with agents"])
+        self.assertTrue(res.ok, res.summary())
+
     def test_extractors(self):
         self.assertEqual(quotes_in('He said "this is long enough" and "no".'), ["this is long enough"])
         self.assertEqual(numbers_in("about 1 in 6, $20 million, 10% within 2026"), ["1", "6", "$20 million", "10%"])

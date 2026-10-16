@@ -6,6 +6,7 @@ import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .approval import ACTIONS, Approval
 from ..news.extract import Article
 from ..news.models import Story
 
@@ -40,6 +41,15 @@ CREATE TABLE IF NOT EXISTS drafts (
     kind TEXT NOT NULL,
     created_at TEXT NOT NULL,
     data TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS approvals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    kind TEXT NOT NULL,
+    target_id TEXT NOT NULL,
+    approver TEXT NOT NULL,
+    action TEXT NOT NULL,
+    at TEXT NOT NULL,
+    note TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS items_story ON items(story_id);
 CREATE INDEX IF NOT EXISTS stories_last_seen ON stories(last_seen);
@@ -109,3 +119,20 @@ class DB:
         row = self.conn.execute("SELECT data FROM drafts WHERE story_id = ? AND kind = ? ORDER BY id DESC LIMIT 1",
                                 (story_id, kind)).fetchone()
         return json.loads(row["data"]) if row else None
+
+    # ---- approvals (the record a Buffer post requires) ----
+    def record_approval(self, kind: str, target_id: str, approver: str, action: str, note: str = "") -> Approval:
+        if action not in ACTIONS:
+            raise ValueError(f"approval action must be one of {ACTIONS}, got {action!r}")
+        if not approver:
+            raise ValueError("an approval needs a named approver")
+        at = _now()
+        with self.conn:
+            cur = self.conn.execute("INSERT INTO approvals (kind, target_id, approver, action, at, note) VALUES (?,?,?,?,?,?)",
+                                    (kind, target_id, approver, action, at, note))
+        return Approval(id=int(cur.lastrowid), kind=kind, target_id=target_id, approver=approver, action=action, at=at, note=note)
+
+    def approvals_for(self, target_id: str) -> list[Approval]:
+        rows = self.conn.execute("SELECT * FROM approvals WHERE target_id = ? ORDER BY id", (target_id,))
+        return [Approval(id=r["id"], kind=r["kind"], target_id=r["target_id"], approver=r["approver"],
+                         action=r["action"], at=r["at"], note=r["note"]) for r in rows]
